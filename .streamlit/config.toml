@@ -1,0 +1,9 @@
+[server]
+enableStaticServing = true
+
+[theme]
+primaryColor="#bd93f9"
+backgroundColor="#282a36"
+secondaryBackgroundColor="#44475a"
+textColor="#09af87"
+font="serif"
