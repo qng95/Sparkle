@@ -157,8 +157,8 @@ def main():
     logging.basicConfig(level=logging.INFO)
     logging.info("Starting Sparkle app...")
 
-    #if not simpleauth.auth():
-    #   st.stop()
+    if not simpleauth.auth():
+       st.stop()
 
     init_session_data()
     init_format()
