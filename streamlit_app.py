@@ -63,7 +63,7 @@ def add_sidebar():
                 html="""
                 <div>
                     <div>
-                        <video autoplay muted playsinline id="videoRecorded" style="width:100%;height=200px;"></video>
+                        <video controls autoplay muted playsinline id="videoRecorded" style="width:100%;height=200px;"></video>
                     </div>
                     <div>
                         <button type="button" id="buttonStart">Start</button>
