@@ -1,51 +1,22 @@
 import os
 import logging
 import time
+import random
 from enum import Enum
 
 import streamlit as st
+from streamlit.components.v1 import html as st_html
 from st_audiorec import st_audiorec
 from streamlit_lottie import st_lottie
 
 from sparkle import simpleauth
 
-st.set_page_config(page_title="Sparkle", page_icon="🐸")
-
-CHAT_AVATAR = {
-    'user': '🤓',
-    'assistant': '🐸'
-}
-
-
-class Stage(str, Enum):
-    # When the app is started or refreshed with F5 in the browser
-    start_up = "start_up"
-
-    welcome = "welcome"
-    presentation_structure = "presentation_structure"
-    recording = "recording"
-    recording_transcript = "recording_transcript"
-    anlysis = "analysis"
-    summary = "summary"
-
+st.set_page_config(page_title="Sparkle", page_icon="🐸", layout="wide")
 
 def init_session_data():
     logging.info("Initializing session data...")
-    if "recording" not in st.session_state:
-        st.session_state.recording = None
-
-    if "messages" not in st.session_state:
-        logging.error("WHAT THE HELL")
-        st.session_state.messages = []
-
-    if "presentation_structure" not in st.session_state:
-        st.session_state.presentation_structure = []
-
-    if "recording_transcript" not in st.session_state:
-        st.session_state.recording_transcript = None
-
-    if "stage" not in st.session_state:
-        st.session_state.stage = Stage.start_up
+    st.session_state.recording = None
+    st.session_state.embedded_canva = None
 
 
 def init_format():
@@ -53,151 +24,130 @@ def init_format():
     st.markdown(
         """
     <style>
-        .stChatMessage.st-emotion-cache-janbn0 {
-            flex-direction: row-reverse;
-            text-align: right;
-        }
+    .st-emotion-cache-k3d5su.e1nzilvr5 {
+        margin-bottom: 0px;
+    }  
+        
     </style>
     """,
         unsafe_allow_html=True,
     )
 
 
-def print_as_stream(input: str):
-    def stream_generator(s: str):
-        for word in s.split(" "):
-            yield word + " "
-            time.sleep(0.01)
-
-    st.write_stream(stream_generator(s=input))
-
-
 @st.cache_data
 def add_header():
     logging.info("Rendering header at app startup ...")
-    st.markdown("<h1 style='text-align: center;'>🐸 Sparkle 🐸</h1>", unsafe_allow_html=True)
-    st_lottie("https://lottie.host/bc17f388-eb90-4d2f-b6d7-7e7ebc949de4/mIru5msWdS.json", quality="high", height=100,
-              speed=1)
-    st.divider()
+    #st.markdown("<h1 style='text-align: center;'>🐸 Sparkle 🐸</h1>", unsafe_allow_html=True)
+    #st_lottie("https://lottie.host/bc17f388-eb90-4d2f-b6d7-7e7ebc949de4/mIru5msWdS.json", quality="high", height=100,
+    #          speed=1)
+    #st.divider()
 
 
 def add_sidebar():
     logging.info("Rendering sidebar...")
     with st.sidebar:
-        st.markdown("<h1 style='text-align: center;'>🎙️Recorder 🎙️</h1>", unsafe_allow_html=True)
-        wav_audio_data = st_audiorec()
+        st.markdown("<h1 style='text-align: center; font-size: 2.5rem;'>🐸 Sparkle 🐸</h1>", unsafe_allow_html=True)
+        st_lottie("https://lottie.host/bc17f388-eb90-4d2f-b6d7-7e7ebc949de4/mIru5msWdS.json", quality="high",
+                  height=100,
+                  speed=1)
+        st.divider()
 
-        if wav_audio_data:
-            st.session_state.recording = wav_audio_data
+        st.markdown("<h1 style='text-align: center;'>🎙Ghi Hình 🎙️</h1>", unsafe_allow_html=True)
+        #wav_audio_data = st_audiorec()
+        #if wav_audio_data:
+        #    st.session_state.recording = wav_audio_data
+        #st.divider()
 
+        with st.container():
+            st_html(
+                html="""
+                <div>
+                    <div>
+                        <video autoplay muted playsinline id="videoRecorded" style="width:100%;height=200px;"></video>
+                    </div>
+                    <div>
+                        <button type="button" id="buttonStart">Start</button>
+                        <button type="button" id="buttonStop" disabled>Stop</button>
+                        <button type="button" id="buttonDownload" disabled>Download</button>
+                    </div>
+                    <script type="text/javascript">
+                        async function main () {
+                            const buttonStart = document.querySelector('#buttonStart')
+                            const buttonStop = document.querySelector('#buttonStop')
+                            const buttonDownload = document.querySelector('#buttonDownload')
+                            
+                            const videoRecorded = document.querySelector('#videoRecorded')
+                            
+                            const stream = await navigator.mediaDevices.getUserMedia({ // <1>
+                                video: true,
+                                audio: true,
+                            })
+                            
+                            // videoRecorded.srcObject = stream
+                            
+                            if (!MediaRecorder.isTypeSupported('video/webm')) { // <2>
+                                console.warn('video/webm is not supported')
+                            }
+                            
+                            const mediaRecorder = new MediaRecorder(stream, { // <3>
+                                mimeType: 'video/webm',
+                            })
+                            
+                            buttonStart.addEventListener('click', () => {
+                                mediaRecorder.start() // <4>
+                                videoRecorded.srcObject = stream
+                                buttonStart.setAttribute('disabled', '')
+                                buttonDownload.setAttribute('disabled', '')
+                                buttonStop.removeAttribute('disabled')
+                            })
+                            
+                            buttonStop.addEventListener('click', () => {
+                                buttonStop.setAttribute('disabled', '')
+                                mediaRecorder.stop() // <5>
+                                videoRecorded.srcObject = null
+                                videoRecorded.muted = false
+                                videoRecorded.autoplay = false
+                                videoRecorded.controls = true
+                            })
+                            
+                            mediaRecorder.addEventListener('dataavailable', event => {
+                                buttonStart.removeAttribute('disabled')
+                                buttonDownload.removeAttribute('disabled')
+                                videoRecorded.src = URL.createObjectURL(event.data) // <6>
+                            })
+                            
+                            buttonDownload.addEventListener('click', () => {
+                                const a = document.createElement('a')
+                                a.download = 'video.webm'
+                                a.href = videoRecorded.src
+                                a.click()
+                            })
+                        }
+                        
+                        main()
+                    </script>
+                </div>
+                """,
+                height=390,
+                scrolling=True,
+            )
 
-def ai_answer(response):
-    with st.chat_message("assistant", avatar=CHAT_AVATAR["assistant"]):
-        print_as_stream(response)
-    st.session_state.messages.append({"role": "assistant", "content": response})
+        st.divider()
 
+        #st.markdown("""<iframe style="width:100%;max-width:360px;height:360px;"
+        #            src="https://stopwatch-app.com/widget/stopwatch?theme=dark&color=green"
+        #            frameborder="0"></iframe>""", unsafe_allow_html=True)
 
-def generate_next_ai_response(user_input):
-    match st.session_state.stage:
-        case Stage.welcome:
-            if user_input.strip().lower() == "yes":
-                st.session_state.stage = Stage.presentation_structure
+        #st.markdown("""<iframe style="width:100%;max-width:360px;height:360px;"
+        #            src="https://stopwatch-app.com/widget/timer?theme=dark&color=green&hrs=0&min=60&sec=0"
+        #            frameborder="0"></iframe>""", unsafe_allow_html=True)
 
-                ai_answer("Great! Now let's start with the structure of your presentation.")
-                ai_answer("Can you tell me the brief overview on your presentation ?")
-                ai_answer("  * What is the topic ?")
-                ai_answer("  * What is the planned agenda ?")
-                ai_answer("  * What are the main points that you would like to discuss ?")
-                ai_answer("  * What is the final conclusion that you would like to make ?")
-                ai_answer("You can type as much as you want. I am here to listen. 😊")
-                ai_answer("Then whenever you feel ready, just type 'I'm done' - without quote - into the chat. 😉")
-
-            else:
-                ai_answer("If you ready, just type 'yes' - without quote - into the chat. 🙄")
-
-        case Stage.presentation_structure:
-            if user_input.strip().lower() == "i'm done":
-                st.session_state.stage = Stage.recording
-
-                ai_answer("I have noted down the structure of your presentation.")
-                ai_answer("Awesome! Now, let's start recording your presentation.")
-                ai_answer("I'll show you how to record your presentation.")
-                ai_answer("When you're ready, press the 'Start Recording' button on left hand side to record your presentation. 🎙️")
-                ai_answer(
-                    "When you finished your presentation press 'Stop' button. Then you can listen to your presentation again by pressing play ▶️ button.️")
-                ai_answer("If you want to record again, just press 'Reset' button and start again. 🔄")
-                ai_answer("To download the recording to your machine for saving then press 'Download' button. 📥")
-                ai_answer("Now enjoy! When you happy with your presentation recording. Again, tell me 'I'm done'! 📝")
-            else:
-                st.session_state.presentation_structure.append(user_input)
-
-        case Stage.recording:
-            if user_input.strip().lower() == "i'm done":
-                st.session_state.stage = Stage.recording_transcript
-
-                st.balloons()
-                ai_answer("Congratulation! You have finished your presentation rehearsal. Hurray 🎉🎉🎉🎉")
-                ai_answer("Now, I'll create a transcript of your presentation. Then you can review it and edit it if you want. 🫣🫣")
-
-                # TODO: Call the speech-to-text API to generate the transcript
-            else:
-                st.session_state.presentation_structure.append(user_input)
-
-        case Stage.recording_transcript:
-            if user_input.strip().lower() == "i'm done":
-                st.session_state.stage = Stage.anlysis
-            else:
-                st.session_state.presentation_structure.append(user_input)
-
-
-def handle_user_input(user_input):
-    logging.info("Handling user input...")
-
-    # Display user message in chat message container
-    st.chat_message("user", avatar=CHAT_AVATAR["user"]).markdown(user_input)
-
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": user_input})
-
-    generate_next_ai_response(user_input=user_input)
-
-
-def chat_submit_handler(**kwargs):
-    logging.info(f"Callback on user input submit: {kwargs}")
-
-
-def start_chat():
-    logging.info("Starting chat...")
-    # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"], avatar=CHAT_AVATAR[message["role"]]):
-            st.markdown(message["content"])
-
-    # React to user input
-    if prompt := st.chat_input("Type something here...", on_submit=chat_submit_handler):
-        handle_user_input(user_input=prompt)
-    else:
-        if st.session_state.stage == Stage.welcome:
-            with st.chat_message("assistant", avatar=CHAT_AVATAR["assistant"]):
-                print_as_stream("Hey mate! Anxious about your presentation? Don't worry, I gotcha' back. 😉")
-                st.session_state.messages.append({"role": "assistant", "content": "Hey mate! Anxious about your presentation? Don't worry, I gotcha' back. 😉"})
-
-                print_as_stream("We will work together to make your presentation a big success. 🚀")
-                st.session_state.messages.append({"role": "assistant",
-                                                  "content": "We will work together to make your presentation a big success. 🚀"})
-
-                print_as_stream("Now, let's do it mate! 😎")
-                st.session_state.messages.append({"role": "assistant",
-                                                  "content": "Now, let's do it mate! 😎"})
-
-                print_as_stream("When ever you feel ready. Answer with 'Yes'. 😉")
-                st.session_state.messages.append({"role": "assistant",
-                                                  "content": "When ever you feel ready. Answer with 'Yes'. 😉"})
+        st.markdown("""<iframe src="https://giorgiark.github.io/stopwatch2.0/" width="100%" height="100%" border-radius="100px" style="height:200px;"></iframe>""", unsafe_allow_html=True)
 
 
 def app_start():
     def on_start_btn_click():
-        st.session_state.stage = Stage.welcome
+        ...
 
     st.button("START", key="start-btn", on_click=on_start_btn_click(), type="primary", disabled=False,
               use_container_width=True)
@@ -207,18 +157,40 @@ def main():
     logging.basicConfig(level=logging.INFO)
     logging.info("Starting Sparkle app...")
 
-    if not simpleauth.auth():
-        st.stop()
+    #if not simpleauth.auth():
+    #   st.stop()
 
     init_session_data()
     init_format()
-    if st.session_state.stage == Stage.start_up:
-        add_header()
-        app_start()
-    else:
-        add_header()
-        add_sidebar()
-        start_chat()
+
+    add_header()
+    add_sidebar()
+
+    def on_submit_btn_click():
+        pass
+
+    with st.container():
+        canva_embeded = st.text_area(
+            label="Nhúng thuyết trình Canva",
+            placeholder="Dán embedded HTML Canva code vào đây!",
+            key="canva_embeded",
+        )
+        button = st.button("Bắt đầu", key="button", on_click=on_submit_btn_click)
+        if button:
+            st.balloons()
+            random_sound = random.choice(["1.mp3", "2.mp3", "3.mp3", "4.mp3"])
+            st.audio(os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "sound", random_sound),
+                     format="audio/mpeg", end_time="1m", autoplay=True)
+
+            left_co, cent_co, last_co = st.columns(3)
+            with left_co:
+                st.image(image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image", "chaiyo.png"))
+            with cent_co:
+                st.image(image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image", "cheer-up-cheer.gif"))
+            with last_co:
+                st.image(image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image", "positive.png"))
+
+            st.markdown(canva_embeded, unsafe_allow_html=True)
 
 
 main()
