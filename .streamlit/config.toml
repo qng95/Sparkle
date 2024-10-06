@@ -3,7 +3,7 @@ enableStaticServing = true
 
 [theme]
 primaryColor="#bd93f9"
-backgroundColor="#282a36"
-secondaryBackgroundColor="#44475a"
+backgroundColor="#fffdf5"
+secondaryBackgroundColor="#d6d5cb"
 textColor="#09af87"
 font="serif"
