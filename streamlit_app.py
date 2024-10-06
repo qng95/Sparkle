@@ -1,6 +1,7 @@
 import os
 import logging
 import random
+import time
 
 import streamlit as st
 from streamlit.components.v1 import html as st_html
@@ -113,14 +114,6 @@ def add_sidebar():
 
         st.divider()
 
-        #st.markdown("""<iframe style="width:100%;max-width:360px;height:360px;"
-        #            src="https://stopwatch-app.com/widget/stopwatch?theme=dark&color=green"
-        #            frameborder="0"></iframe>""", unsafe_allow_html=True)
-
-        #st.markdown("""<iframe style="width:100%;max-width:360px;height:360px;"
-        #            src="https://stopwatch-app.com/widget/timer?theme=dark&color=green&hrs=0&min=60&sec=0"
-        #            frameborder="0"></iframe>""", unsafe_allow_html=True)
-
         st.markdown(
             """<iframe src="https://giorgiark.github.io/stopwatch2.0/" width="100%" height="100%" border-radius="100px" style="height:200px;"></iframe>""",
             unsafe_allow_html=True)
@@ -166,11 +159,18 @@ def main():
                     image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image", "chaiyo.png"))
             with cent_co:
                 st.image(image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image",
-                                            "cheer-up-cheer.gif"))
+                                            "hinh_mi_ve.png"))
             with last_co:
                 st.image(
                     image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image", "positive.png"))
 
+            def chear():
+                text = "Trước khi bắt đầu phần thuyết trình hãy dành ra một chút thời gian cùng hít thở, thư giãn, bình tĩnh cùng với nhau nhé!"
+                for word in text.split(" "):
+                    yield word + " "
+                    time.sleep(0.1)
+
+            st.write_stream(chear())
             st.markdown(canva_embeded, unsafe_allow_html=True)
 
 
