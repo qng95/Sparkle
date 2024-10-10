@@ -159,7 +159,7 @@ def main():
                     image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image", "chaiyo.png"))
             with cent_co:
                 st.image(image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image",
-                                            "hinh_mi_ve.png"))
+                                            "cheer-up-cheer.gif"))
             with last_co:
                 st.image(
                     image=os.path.join(os.path.abspath(os.path.dirname(__file__)), "sparkle", "image", "positive.png"))
